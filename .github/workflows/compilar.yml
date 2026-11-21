@@ -1,0 +1,95 @@
+# Compila o PhotoCraft com a ferramenta Seta Curva para Windows e publica o .exe como Release.
+# Roda a cada push na main (ou pelo botao "Run workflow" na aba Actions).
+name: Compilar PhotoCraft (Seta)
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: compilar
+  cancel-in-progress: true
+
+env:
+  # Versao do PhotoCraft em que a Seta e aplicada (o patch e feito para ela).
+  PHOTOCRAFT_COMMIT: 0e5254e77a5c5e35a575eec2e49e30426229e35d
+  I18N_COMMIT: e56d26244bbac099bfd42e23fb12f78a4be418a7
+  FONTS_COMMIT: cc9269cd8d8258785dac603fba3122e5d2556795
+  TARGET: x86_64-pc-windows-msvc
+
+jobs:
+  windows:
+    runs-on: windows-latest
+    timeout-minutes: 240
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          path: seta
+
+      - name: Baixar o PhotoCraft e aplicar a Seta
+        shell: pwsh
+        run: |
+          function Get-Commit([string] $url, [string] $sha, [string] $dir) {
+            git init -q $dir
+            git -C $dir config core.autocrlf false
+            git -C $dir config core.longpaths true
+            git -C $dir remote add origin $url
+            git -C $dir fetch -q --depth 1 origin $sha
+            if ($LASTEXITCODE) { throw "falhou baixar $url" }
+            git -C $dir checkout -q FETCH_HEAD
+            if ($LASTEXITCODE) { throw "falhou checkout $url" }
+          }
+          Get-Commit https://github.com/storytold/photocraft.git $env:PHOTOCRAFT_COMMIT pc
+          git -C pc apply --whitespace=nowarn "$env:GITHUB_WORKSPACE\seta\seta-curva.patch"
+          if ($LASTEXITCODE) { throw 'o patch da Seta nao aplicou' }
+          Get-Commit https://github.com/storytold/craft-i18n.git $env:I18N_COMMIT i18n
+          [IO.File]::AppendAllText("$env:GITHUB_WORKSPACE\i18n\locales\pt-br\photocraft.tsv", "`n`tCurved Arrow Tool`tFerramenta Seta Curva`n", [Text.UTF8Encoding]::new($false))
+          Get-Commit https://github.com/storytold/craft-fonts.git $env:FONTS_COMMIT fonts
+
+      - name: Rust
+        shell: pwsh
+        run: |
+          rustup toolchain install stable --profile minimal --target $env:TARGET
+          rustup default stable
+          rustc --version
+
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: pc
+          key: seta-release
+
+      - name: Compilar
+        shell: pwsh
+        working-directory: pc
+        env:
+          CRAFT_I18N_DIR: ${{ github.workspace }}\i18n
+          CRAFT_FONTS_DIR: ${{ github.workspace }}\fonts
+          PHOTOCRAFT_BUILD_SHA: ${{ env.PHOTOCRAFT_COMMIT }}
+          CARGO_TARGET_X86_64_PC_WINDOWS_MSVC_RUSTFLAGS: -C target-feature=+crt-static
+          CARGO_PROFILE_RELEASE_LTO: 'off'
+          CARGO_PROFILE_RELEASE_CODEGEN_UNITS: '16'
+          CARGO_INCREMENTAL: '0'
+        run: |
+          cargo build --release --locked -p photocraft --target $env:TARGET
+          if ($LASTEXITCODE) { throw 'cargo build falhou' }
+
+      - name: Publicar
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          $tag = "v${{ github.run_number }}"
+          Copy-Item "pc\target\$env:TARGET\release\photocraft.exe" PhotoCraft-Seta.exe
+          # o ATUALIZAR.bat ja sai apontando para este repositorio
+          (Get-Content seta\ATUALIZAR.bat -Raw).Replace('__REPO__', '${{ github.repository }}') | Set-Content ATUALIZAR.bat -NoNewline
+          $msg = (git -C seta log -1 --pretty=%s) -join "`n"
+          $notes = "$msg`n`nPara atualizar no seu PC: feche o PhotoCraft (Seta) e de dois cliques em ATUALIZAR.bat."
+          gh release create $tag PhotoCraft-Seta.exe ATUALIZAR.bat --repo "${{ github.repository }}" --title "PhotoCraft (Seta) $tag" --notes $notes --latest
+          if ($LASTEXITCODE) { throw 'falhou publicar' }
+          # guarda so as 3 versoes mais novas
+          $old = gh release list --repo "${{ github.repository }}" --limit 100 --json tagName,createdAt | ConvertFrom-Json | Sort-Object createdAt -Descending | Select-Object -Skip 3
+          foreach ($r in $old) { gh release delete $r.tagName --repo "${{ github.repository }}" --yes --cleanup-tag }
