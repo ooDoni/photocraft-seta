@@ -14,7 +14,7 @@ Para as proximas atualizacoes e so rodar o mesmo `ATUALIZAR.bat` de novo.
 ## Como funciona
 
 - `seta-curva.patch`: a ferramenta Seta, aplicada sobre o PhotoCraft
-  `0e5254e77a5c5e35a575eec2e49e30426229e35d`.
+  `v0.23.1` (`45066c48292e92229ada3459a83453439514c83d`), a mesma versao oficial do ArtCraft.
 - `.github/workflows/compilar.yml`: a cada mudanca aqui, o GitHub compila o PhotoCraft com a Seta
   para Windows e publica o `.exe` em Releases (a aba Actions mostra o andamento).
 

@@ -19,10 +19,10 @@ index 0000000..630e242
 +  <path d="m15 10.5 4 4 3.5-4.5" />
 +</svg>
 diff --git a/crates/doc/src/vector.rs b/crates/doc/src/vector.rs
-index 3220ecc..e0fbce1 100644
+index 390a31b..c31997f 100644
 --- a/crates/doc/src/vector.rs
 +++ b/crates/doc/src/vector.rs
-@@ -338,6 +338,50 @@ pub enum LiveShape {
+@@ -329,6 +329,50 @@ pub enum LiveShape {
          length: f64,
          concavity: f64,
      },
@@ -74,10 +74,10 @@ index 3220ecc..e0fbce1 100644
  
  /// A shape layer: a filled and/or stroked path.
 diff --git a/crates/engine/src/cmd/vector_cmds.rs b/crates/engine/src/cmd/vector_cmds.rs
-index 80dd037..9b1a505 100644
+index 7d78125..2fc41b1 100644
 --- a/crates/engine/src/cmd/vector_cmds.rs
 +++ b/crates/engine/src/cmd/vector_cmds.rs
-@@ -373,6 +373,9 @@ pub fn specs() -> Vec<CommandSpec> {
+@@ -373,5 +373,8 @@ pub fn specs() -> Vec<CommandSpec> {
  #[cfg(test)]
  mod tests;
  
@@ -86,7 +86,6 @@ index 80dd037..9b1a505 100644
 +
  #[cfg(test)]
  mod line_tool_history_name_tests;
- 
 diff --git a/crates/engine/src/cmd/vector_cmds/curve_arrow_tests.rs b/crates/engine/src/cmd/vector_cmds/curve_arrow_tests.rs
 new file mode 100644
 index 0000000..6e57d22
@@ -263,10 +262,10 @@ index 0000000..6e57d22
 +    assert!(colors.is_empty());
 +}
 diff --git a/crates/engine/src/cmd/vector_cmds/params.rs b/crates/engine/src/cmd/vector_cmds/params.rs
-index ea52a43..ee0e19a 100644
+index bab083c..b99df19 100644
 --- a/crates/engine/src/cmd/vector_cmds/params.rs
 +++ b/crates/engine/src/cmd/vector_cmds/params.rs
-@@ -414,6 +414,192 @@ pub(super) fn live_from_params(cmd: &str, kind: &str, p: &Value, prev: Option<&L
+@@ -404,6 +404,192 @@ pub(super) fn live_from_params(cmd: &str, kind: &str, p: &Value, prev: Option<&L
                  LiveShape::Line { from, to, weight }
              }
          }
@@ -460,12 +459,12 @@ index ea52a43..ee0e19a 100644
 +    })
 +}
 diff --git a/crates/engine/src/cmd/vector_cmds/shape.rs b/crates/engine/src/cmd/vector_cmds/shape.rs
-index 614a10f..a40a4a2 100644
+index 8b7055d..b0c214d 100644
 --- a/crates/engine/src/cmd/vector_cmds/shape.rs
 +++ b/crates/engine/src/cmd/vector_cmds/shape.rs
-@@ -82,14 +82,32 @@ fn live_kind(l: &LiveShape) -> &'static str {
+@@ -81,14 +81,32 @@ fn live_kind(l: &LiveShape) -> &'static str {
+         LiveShape::Polygon { star_ratio, .. } if *star_ratio < 1.0 => "star",
          LiveShape::Polygon { .. } => "polygon",
-         LiveShape::Triangle { .. } => "triangle",
          LiveShape::Line { .. } | LiveShape::ArrowLine { .. } => "line",
 +        LiveShape::CurveArrow { .. } => "curveArrow",
      }
@@ -496,7 +495,7 @@ index 614a10f..a40a4a2 100644
  /// A staged stroke edit rendered with the same validation and cache refresh as `shape.edit`.
  /// The caller owns this snapshot; the session and its history remain untouched.
  pub fn preview_shape_stroke(doc: &Document, id: LayerId, params: &Value) -> Result<Document> {
-@@ -187,6 +205,54 @@ fn arrow_axis_scales(a: &Affine, from: [f64; 2], to: [f64; 2]) -> Option<(f64, f
+@@ -186,6 +204,54 @@ fn arrow_axis_scales(a: &Affine, from: [f64; 2], to: [f64; 2]) -> Option<(f64, f
      (dot.abs() <= 1e-10 * axial * perpendicular).then_some((axial, perpendicular))
  }
  
@@ -551,7 +550,7 @@ index 614a10f..a40a4a2 100644
  /// Applies an affine transform to a shape's path, keeping the live shape when the transform
  /// is a translation plus axis-aligned scale (otherwise the shape stops being parametric).
  pub fn transform_shape(sh: &mut ShapeLayer, a: &Affine) {
-@@ -213,6 +279,13 @@ pub fn transform_shape(sh: &mut ShapeLayer, a: &Affine) {
+@@ -212,6 +278,13 @@ pub fn transform_shape(sh: &mut ShapeLayer, a: &Affine) {
  
      sh.path = sh.path.transform(a);
      let [m0, m1, m2, m3, tx, ty] = a.m;
@@ -565,7 +564,7 @@ index 614a10f..a40a4a2 100644
      let axis_aligned = m1.abs() < 1e-12 && m2.abs() < 1e-12 && m0 > 0.0 && m3 > 0.0;
      // The path has already received the exact affine transform. Drop live arrow
      // parameters if later edits would regenerate a different, unskewed head.
-@@ -252,6 +325,8 @@ pub fn transform_shape(sh: &mut ShapeLayer, a: &Affine) {
+@@ -250,6 +323,8 @@ pub fn transform_shape(sh: &mut ShapeLayer, a: &Affine) {
                          concavity,
                      }
                  }
@@ -574,15 +573,15 @@ index 614a10f..a40a4a2 100644
                  LiveShape::Line { from, to, weight } => {
                      // Live-shape edits regenerate the line's filled bar from its parameters.
                      // Keep the weight in sync with a positive scale of the path, or an
-@@ -431,6 +506,7 @@ fn default_name(kind: &str) -> &'static str {
-         "triangle" => "Triangle",
+@@ -428,6 +503,7 @@ fn default_name(kind: &str) -> &'static str {
+         "polygon" => "Polygon",
          "star" => "Star",
          "line" => "Line",
 +        "curveArrow" | "arrowCurve" => "Seta",
          _ => "Shape",
      }
  }
-@@ -602,6 +678,23 @@ pub(super) fn shape_edit(s: &mut Session, p: &Value) -> Result<Value> {
+@@ -570,6 +646,23 @@ pub(super) fn shape_edit(s: &mut Session, p: &Value) -> Result<Value> {
              "arrowWidth",
              "arrowLength",
              "arrowConcavity",
@@ -606,40 +605,11 @@ index 614a10f..a40a4a2 100644
          ];
          if geom_keys.iter().any(|k| p.get(*k).is_some()) {
              let kind = p.get("kind").and_then(Value::as_str).map(str::to_string).or_else(|| sh.live.as_ref().map(|l| live_kind(l).to_string()));
-diff --git a/crates/engine/src/prefs.rs b/crates/engine/src/prefs.rs
-index bd1e3e4..880cf33 100644
---- a/crates/engine/src/prefs.rs
-+++ b/crates/engine/src/prefs.rs
-@@ -1395,6 +1395,7 @@ pub const DEFAULT_TOOLBAR: &[&[&str]] = &[
-     &["Type", "VerticalType", "VerticalTypeMask", "HorizontalTypeMask"],
-     &["PathSelection", "DirectSelection"],
-     &["Rectangle", "EllipseShape", "Triangle", "Polygon", "Star", "Line", "CustomShape"],
-+    &["CurveArrow"],
-     &["Hand", "RotateView"],
-     &["Zoom"],
- ];
-@@ -1466,7 +1467,15 @@ impl ToolbarCustomization {
-         }
-         let mut seen: Vec<String> = Vec::new();
-         let mut moved = Vec::new();
--        let toolbar = resolve(&stored, &mut seen, &hidden, Some(&mut moved));
-+        let mut toolbar = resolve(&stored, &mut seen, &hidden, Some(&mut moved));
-+        // A layout saved before the Curved Arrow tool existed still gets it in the toolbar, after
-+        // the shape tools (or last), unless the user hid it.
-+        let arrow = "CurveArrow".to_string();
-+        if !seen.contains(&arrow) && !hidden.contains(&arrow) {
-+            seen.push(arrow.clone());
-+            let at = toolbar.iter().position(|g| g.iter().any(|t| t == "Rectangle" || t == "Line")).map_or(toolbar.len(), |i| i + 1);
-+            toolbar.insert(at, vec![arrow]);
-+        }
-         let mut extras = resolve(self.extras.as_deref().unwrap_or_default(), &mut seen, &hidden, None);
-         extras.append(&mut moved);
-         for (id, _, _) in crate::shell_commands::TOOLS {
 diff --git a/crates/engine/src/shell_commands.rs b/crates/engine/src/shell_commands.rs
-index 278a529..f800d9d 100644
+index 7aaf58f..b3f1e7f 100644
 --- a/crates/engine/src/shell_commands.rs
 +++ b/crates/engine/src/shell_commands.rs
-@@ -160,6 +160,7 @@ pub const TOOLS: &[(&str, &str, Option<&str>)] = &[
+@@ -172,6 +172,7 @@ pub const TOOLS: &[(&str, &str, Option<&str>)] = &[
      ("tools.select.star", "Star Tool", Some("U")),
      ("tools.select.line", "Line Tool", Some("U")),
      ("tools.select.customShape", "Custom Shape Tool", Some("U")),
@@ -648,24 +618,22 @@ index 278a529..f800d9d 100644
      ("tools.select.sliceSelect", "Slice Select Tool", Some("C")),
      ("tools.select.frame", "Frame Tool", Some("K")),
 diff --git a/crates/format/src/convert.rs b/crates/format/src/convert.rs
-index fe8e60b..3d2aa36 100644
+index 9fc41cb..7f6583b 100644
 --- a/crates/format/src/convert.rs
 +++ b/crates/format/src/convert.rs
-@@ -158,7 +158,9 @@ fn layer_m(l: &Layer, sink: &mut dyn Sink) -> LayerM {
+@@ -160,13 +160,18 @@ fn layer_m(l: &Layer, sink: &mut dyn Sink) -> LayerM {
              // Older PhotoCraft versions cannot deserialize ArrowLine.
              // The saved path preserves the arrow's visual appearance.
              live: match &s.live {
--                Some(photocraft_doc::LiveShape::ArrowLine { .. } | photocraft_doc::LiveShape::Triangle { .. }) => None,
-+                Some(
-+                    photocraft_doc::LiveShape::ArrowLine { .. } | photocraft_doc::LiveShape::Triangle { .. } | photocraft_doc::LiveShape::CurveArrow { .. },
-+                ) => None,
+-                Some(photocraft_doc::LiveShape::ArrowLine { .. }) => None,
++                Some(photocraft_doc::LiveShape::ArrowLine { .. } | photocraft_doc::LiveShape::CurveArrow { .. }) => None,
                  other => other.clone(),
              },
              arrow_live: match &s.live {
-@@ -170,6 +172,10 @@ fn layer_m(l: &Layer, sink: &mut dyn Sink) -> LayerM {
-                 Some(triangle @ photocraft_doc::LiveShape::Triangle { .. }) => Some(triangle.clone()),
+                 Some(arrow @ photocraft_doc::LiveShape::ArrowLine { .. }) => Some(arrow.clone()),
                  _ => None,
              },
++            // A curved arrow: other builds cannot read the kind, so they open its path.
 +            curve_arrow_live: match &s.live {
 +                Some(arrow @ photocraft_doc::LiveShape::CurveArrow { .. }) => Some(arrow.clone()),
 +                _ => None,
@@ -673,35 +641,35 @@ index fe8e60b..3d2aa36 100644
              density: s.density,
              feather: s.feather,
          },
-@@ -505,13 +511,15 @@ impl Loader<'_> {
+@@ -495,11 +500,16 @@ impl Loader<'_> {
                      warp: warp.clone(),
                  })
              }
--            ContentM::Shape { fill, cache, psd_raw, path, stroke, live, arrow_live, triangle_live, density, feather } => LayerContent::Shape(ShapeLayer {
-+            ContentM::Shape { fill, cache, psd_raw, path, stroke, live, arrow_live, triangle_live, curve_arrow_live, density, feather } => LayerContent::Shape(ShapeLayer {
+-            ContentM::Shape { fill, cache, psd_raw, path, stroke, live, arrow_live, density, feather } => LayerContent::Shape(ShapeLayer {
++            ContentM::Shape { fill, cache, psd_raw, path, stroke, live, arrow_live, curve_arrow_live, density, feather } => LayerContent::Shape(ShapeLayer {
                  path: path.clone(),
                  fill: fill.clone(),
                  stroke: stroke.clone(),
--                live: arrow_live
+-                live: arrow_live.as_ref().filter(|shape| matches!(shape, photocraft_doc::LiveShape::ArrowLine { .. })).cloned().or_else(|| live.clone()),
 +                live: curve_arrow_live
-                     .as_ref()
--                    .filter(|shape| matches!(shape, photocraft_doc::LiveShape::ArrowLine { .. }))
++                    .as_ref()
 +                    .filter(|shape| matches!(shape, photocraft_doc::LiveShape::CurveArrow { .. }))
-+                    .or(arrow_live.as_ref()
-+                    .filter(|shape| matches!(shape, photocraft_doc::LiveShape::ArrowLine { .. })))
-                     .or_else(|| triangle_live.as_ref().filter(|shape| matches!(shape, photocraft_doc::LiveShape::Triangle { .. })))
-                     .cloned()
-                     .or_else(|| live.clone()),
++                    .or(arrow_live.as_ref().filter(|shape| matches!(shape, photocraft_doc::LiveShape::ArrowLine { .. })))
++                    .cloned()
++                    .or_else(|| live.clone()),
+                 cache: self.opt_surface(cache)?,
+                 psd_raw: self.opt_blob(psd_raw)?,
+                 density: *density,
 diff --git a/crates/format/src/manifest.rs b/crates/format/src/manifest.rs
-index 1c26289..6c89bf9 100644
+index d57bc4e..b567786 100644
 --- a/crates/format/src/manifest.rs
 +++ b/crates/format/src/manifest.rs
-@@ -303,6 +303,10 @@ pub enum ContentM {
-         /// read it there; they ignore this field and open the shape as its saved path.
+@@ -288,6 +288,10 @@ pub enum ContentM {
+         /// Older PhotoCraft versions ignore this optional field.
          #[serde(default, skip_serializing_if = "Option::is_none")]
-         triangle_live: Option<LiveShape>,
-+        /// A curved arrow (the Arrow tool), stored apart from `live` for the same reason: other
-+        /// builds ignore the field and open the arrow as its saved path.
+         arrow_live: Option<LiveShape>,
++        /// A curved arrow (the Arrow tool), stored apart from `live` because other builds cannot
++        /// read the kind there; they ignore this field and open the arrow as its saved path.
 +        #[serde(default, skip_serializing_if = "Option::is_none")]
 +        curve_arrow_live: Option<LiveShape>,
          /// The path's density as the fill's mask; older files have none (100 %).
@@ -763,107 +731,110 @@ index 0000000..90a3bab
 +    assert_eq!(saved["curve_arrow_live"]["kind"], "curveArrow");
 +}
 diff --git a/crates/format/tests/it/main.rs b/crates/format/tests/it/main.rs
-index 057fc1e..e823fec 100644
+index 71eae66..9bfbec8 100644
 --- a/crates/format/tests/it/main.rs
 +++ b/crates/format/tests/it/main.rs
-@@ -11,4 +11,5 @@ mod layer_labels;
+@@ -10,3 +10,4 @@ mod frame_stroke;
+ mod layer_labels;
  mod roundtrip;
- mod scratch_retry;
  mod smart_contents;
 +mod curve_arrow_live;
- mod triangle_live;
 diff --git a/crates/io/src/vector_map.rs b/crates/io/src/vector_map.rs
-index 66d3257..9450ad4 100644
+index d7667d4..f54e2dd 100644
 --- a/crates/io/src/vector_map.rs
 +++ b/crates/io/src/vector_map.rs
-@@ -505,7 +505,7 @@ pub fn vogk_bytes(s: &LiveShape, dpi: f32) -> Option<Vec<u8>> {
+@@ -491,7 +491,7 @@ pub fn vogk_bytes(s: &LiveShape, dpi: f32) -> Option<Vec<u8>> {
                  .with("keyOriginLineArrLngth", Value::Double(*length))
                  .with("keyOriginLineArrConc", Value::Integer(concavity.round() as i32))
          }
--        LiveShape::Polygon { .. } | LiveShape::Triangle { .. } => return None,
-+        LiveShape::Polygon { .. } | LiveShape::Triangle { .. } | LiveShape::CurveArrow { .. } => return None,
+-        LiveShape::Polygon { .. } => return None,
++        LiveShape::Polygon { .. } | LiveShape::CurveArrow { .. } => return None,
      };
      let o = o.with("keyOriginIndex", Value::Integer(0));
      let d = Descriptor::new("null").with("keyDescriptorList", Value::List(vec![Value::Descriptor(o)]));
-diff --git a/crates/ui-egui/src/canvas/tools/mod.rs b/crates/ui-egui/src/canvas/tools/mod.rs
-index 4d03eb8..983540a 100644
---- a/crates/ui-egui/src/canvas/tools/mod.rs
-+++ b/crates/ui-egui/src/canvas/tools/mod.rs
-@@ -98,6 +98,8 @@ pub(crate) struct CanvasTools {
-     pub(crate) retouch: retouch::RetouchTools,
-     /// The Perspective Crop tool.
-     pub(crate) perspective: crate::perspective_crop_ui::PerspectiveCrop,
-+    /// The Curved Arrow tool.
-+    pub(crate) curve_arrow: crate::curve_arrow_tool::CurveArrowTool,
-     /// The Crop tool.
-     pub(crate) crop: crate::crop_ui::CropHost,
-     /// The document and canvas a running gesture began on: the canvas pass ends it with `tool_changed` once another
-@@ -134,6 +136,7 @@ impl Default for CanvasTools {
-             slice: Default::default(),
-             retouch: Default::default(),
-             perspective: Default::default(),
-+            curve_arrow: Default::default(),
-             crop: Default::default(),
-             gesture_on: None,
-             #[cfg(test)]
-@@ -181,6 +184,8 @@ pub(crate) enum Family {
-     Slice,
-     /// Patch, Content-Aware Move, Red Eye and Object Selection.
-     Retouch,
-+    /// The Curved Arrow tool.
-+    CurveArrow,
- }
- 
- /// The family `tool` belongs to. Clone Stamp and Healing are painting tools whose Alt press is the retouch source pick;
-@@ -209,6 +214,7 @@ pub(crate) fn family(tool: Tool) -> Family {
-         Tool::Frame => Family::Frame,
-         Tool::Slice | Tool::SliceSelect => Family::Slice,
-         Tool::Patch | Tool::ContentAwareMove | Tool::RedEye | Tool::ObjectSelection => Family::Retouch,
-+        Tool::CurveArrow => Family::CurveArrow,
-         Tool::Pen
-         | Tool::FreeformPen
-         | Tool::CurvaturePen
-@@ -548,6 +554,7 @@ fn with_rig<R>(
-         slice,
-         retouch,
-         perspective,
-+        curve_arrow,
-         ..
-     } = tools;
-     let outline_open = selection.outline_open();
-@@ -618,6 +625,7 @@ fn with_rig<R>(
-                     None => dynamic(boxed.insert(Box::new(NoTool))),
-                 },
-                 Family::PerspectiveCrop => dynamic(boxed.insert(crate::perspective_crop_ui::tool(&scope, perspective, host))),
-+                Family::CurveArrow => dynamic(boxed.insert(crate::curve_arrow_tool::tool(&scope, curve_arrow, host))),
-             }
-         };
-         if command_wanted
-@@ -765,6 +773,7 @@ pub(crate) fn after_run(app: &mut PhotocraftApp, tools: &mut CanvasTools, respon
-     crate::slice_ui::drain(app, &mut tools.slice, response);
-     retouch::drain(app, &mut tools.retouch, response);
-     crate::perspective_crop_ui::drain(app, &mut tools.perspective, response);
-+    crate::curve_arrow_tool::drain(app, &mut tools.curve_arrow, response);
-     if let Some(pan) = response.pan {
-         let host = app.session.active_index().map(CanvasHost::main);
-         if let Some(host) = host {
+diff --git a/crates/ui-egui/src/canvas.rs b/crates/ui-egui/src/canvas.rs
+index 91faeb7..6113b52 100644
+--- a/crates/ui-egui/src/canvas.rs
++++ b/crates/ui-egui/src/canvas.rs
+@@ -1686,6 +1686,7 @@ fn paint_primary_overlays(app: &mut PhotocraftApp, ui: &mut egui::Ui, view: &mut
+     crate::vector_ui::draw_overlay(app, painter, xf, doc);
+     crate::symmetry_ui::draw(app, painter, xf);
+     crate::analysis_ui::draw_overlay(app, painter, xf);
++    crate::curve_arrow_tool::draw_overlay(app, painter, xf);
+     crate::gradient_ui::draw_overlay(app, painter, xf);
+     crate::slice_ui::draw_overlay(app, painter, xf);
+     crate::frame_tool::draw_overlay(app, painter, xf);
+@@ -1950,6 +1951,10 @@ fn draw_default_tool_cursor(app: &mut PhotocraftApp, ui: &mut egui::Ui, input: &
+         }
+         // The Count tool (#11773): an arrow with "1+", "1" over a marker (the click's own hit
+         // test) or "1−" with ⌥ there. Precise Other Cursors keeps today's crosshair.
++        Tool::CurveArrow => {
++            let alt = crate::workspace_ui::sticky_mods(app, ui.input(|i| i.modifiers)).alt;
++            crate::curve_arrow_tool::cursor(app, xf.to_doc(p), alt)
++        }
+         Tool::Count if !precise_other_cursor(app) => {
+             let alt = crate::workspace_ui::sticky_mods(app, ui.input(|i| i.modifiers)).alt;
+             let over = crate::analysis_ui::count_marker_at(app, xf.to_doc(p)).is_some();
+diff --git a/crates/ui-egui/src/canvas/tool_input.rs b/crates/ui-egui/src/canvas/tool_input.rs
+index b3b4c42..511d5f9 100644
+--- a/crates/ui-egui/src/canvas/tool_input.rs
++++ b/crates/ui-egui/src/canvas/tool_input.rs
+@@ -221,6 +221,10 @@ fn filter_event_before_tool(
+     if crate::anchor_tools::pointer(app, ev, mods) {
+         return None;
+     }
++    // Curved Arrow tool: points, handles and the arrow being drawn.
++    if crate::curve_arrow_tool::pointer(app, ev, mods) {
++        return None;
++    }
+     // Ruler, Count and Note tools.
+     if crate::analysis_ui::pointer(app, ev, mods) {
+         return None;
 diff --git a/crates/ui-egui/src/icon_data.rs b/crates/ui-egui/src/icon_data.rs
-index a4e5efa..fb3a2a1 100644
+index 8e32a30..39f4d2f 100644
 --- a/crates/ui-egui/src/icon_data.rs
 +++ b/crates/ui-egui/src/icon_data.rs
-@@ -10,6 +10,7 @@ pub static PHOTOCRAFT_ICONS: AppIcons = AppIcons::new("photocraft", Some(2.0), I
- pub static ICONS: &[(&str, &[u8])] = &[
-     ("arrow-left-right", include_bytes!("../../../assets/icons/arrow-left-right.svg")),
-     ("circle-dashed", include_bytes!("../../../assets/icons/circle-dashed.svg")),
+@@ -48,6 +48,8 @@ pub static ICONS: &[(&str, &[u8])] = &[
+     ("contrast", include_bytes!("../../../assets/icons/contrast.svg")),
+     // PhotoCraft original: the Convert Point tool glyph.
+     ("convert-point", include_bytes!("../../../assets/icons/convert-point.svg")),
++    // Seta Curva: the Curved Arrow tool glyph.
 +    ("curve-arrow", include_bytes!("../../../assets/icons/curve-arrow.svg")),
-     ("ellipsis", include_bytes!("../../../assets/icons/ellipsis.svg")),
-     ("file-plus", include_bytes!("../../../assets/icons/file-plus.svg")),
-     ("folder-plus", include_bytes!("../../../assets/icons/folder-plus.svg")),
+     ("copy", include_bytes!("../../../assets/icons/copy.svg")),
+     ("crop", include_bytes!("../../../assets/icons/crop.svg")),
+     // Original: the Crop tool's overlay glyphs (#10889), on the Lucide grid and stroke.
+diff --git a/crates/ui-egui/src/icons.rs b/crates/ui-egui/src/icons.rs
+index a3c702b..1cfca14 100644
+--- a/crates/ui-egui/src/icons.rs
++++ b/crates/ui-egui/src/icons.rs
+@@ -182,6 +182,7 @@ pub fn tool_icon(t: Tool) -> &'static str {
+         Tool::Polygon => "pentagon",
+         Tool::Star => "star",
+         Tool::Line => "slash",
++        Tool::CurveArrow => "curve-arrow",
+         Tool::CustomShape => "cloud",
+     }
+ }
+diff --git a/crates/ui-egui/src/input/shortcuts.rs b/crates/ui-egui/src/input/shortcuts.rs
+index 51970cb..f73b0ba 100644
+--- a/crates/ui-egui/src/input/shortcuts.rs
++++ b/crates/ui-egui/src/input/shortcuts.rs
+@@ -779,6 +779,10 @@ fn handle_object_tool_keys(app: &mut PhotocraftApp, ctx: &egui::Context) -> bool
+     if crate::slice_ui::keys(app, ctx) {
+         return true;
+     }
++    // The Curved Arrow tool: Enter/Escape end the arrow, ⌫/Delete removes the selected point.
++    if crate::curve_arrow_tool::keys(app, ctx) {
++        return true;
++    }
+     // A note selected with the Note tool: ⌫/Delete asks to delete the note, not the layer (#11788).
+     if crate::analysis_ui::note_keys(app, ctx) {
+         return true;
 diff --git a/crates/ui-egui/src/lib.rs b/crates/ui-egui/src/lib.rs
-index b95d040..e0a5caa 100644
+index 7a56e9b..7b3d6c4 100644
 --- a/crates/ui-egui/src/lib.rs
 +++ b/crates/ui-egui/src/lib.rs
-@@ -283,6 +283,7 @@ use tools::shape_gradient_ui;
+@@ -319,6 +319,7 @@ use tools::shape_gradient_ui;
  use tools::shape_options;
  use tools::shape_paint_ui;
  pub use tools::shape_stroke_ui;
@@ -872,51 +843,22 @@ index b95d040..e0a5caa 100644
  pub use tools::stroke_constraint;
  pub use tools::stroke_trace;
 diff --git a/crates/ui-egui/src/panels/options_bar.rs b/crates/ui-egui/src/panels/options_bar.rs
-index fe52a1a..3b58380 100644
+index 3e90347..58f9555 100644
 --- a/crates/ui-egui/src/panels/options_bar.rs
 +++ b/crates/ui-egui/src/panels/options_bar.rs
-@@ -166,6 +166,7 @@ fn body(app: &mut PhotocraftApp, ui: &mut egui::Ui) {
-         || crate::slice_ui::options_bar(ui, app, tool)
-         || crate::frame_tool::options_bar(app, ui, tool)
-         || crate::artboard_tool::options_bar(app, ui, tool)
-+        || crate::curve_arrow_tool::options_bar(app, ui, tool)
-     {
-         return;
-     }
-diff --git a/crates/ui-egui/src/panels/tool_commands.rs b/crates/ui-egui/src/panels/tool_commands.rs
-index c974a05..430e987 100644
---- a/crates/ui-egui/src/panels/tool_commands.rs
-+++ b/crates/ui-egui/src/panels/tool_commands.rs
-@@ -161,6 +161,8 @@ pub(crate) enum ToolCommand {
-     Line,
-     #[command(label = "Custom Shape Tool", icon = "cloud", kind = "tool", group = "U", default = "U", alias = "tools.select.customShape")]
-     CustomShape,
-+    #[command(label = "Curved Arrow Tool", icon = "curve-arrow", kind = "tool", group = "tools", alias = "tools.select.curveArrow")]
-+    CurveArrow,
-     #[command(label = "Slice Tool", icon = "slice_knife", kind = "tool", group = "C", default = "C", alias = "tools.select.slice")]
-     Slice,
-     #[command(label = "Slice Select Tool", icon = "slice_select", kind = "tool", group = "C", default = "C", alias = "tools.select.sliceSelect")]
-@@ -238,6 +240,7 @@ pub(crate) fn command_of(tool: Tool) -> ToolCommand {
-         Tool::Star => ToolCommand::Star,
-         Tool::Line => ToolCommand::Line,
-         Tool::CustomShape => ToolCommand::CustomShape,
-+        Tool::CurveArrow => ToolCommand::CurveArrow,
-         Tool::Slice => ToolCommand::Slice,
-         Tool::SliceSelect => ToolCommand::SliceSelect,
-         Tool::Frame => ToolCommand::Frame,
-@@ -313,6 +316,7 @@ pub(crate) fn tool_of(command: ToolCommand) -> Tool {
-         ToolCommand::Star => Tool::Star,
-         ToolCommand::Line => Tool::Line,
-         ToolCommand::CustomShape => Tool::CustomShape,
-+        ToolCommand::CurveArrow => Tool::CurveArrow,
-         ToolCommand::Slice => Tool::Slice,
-         ToolCommand::SliceSelect => Tool::SliceSelect,
-         ToolCommand::Frame => Tool::Frame,
+@@ -172,6 +172,7 @@ pub fn options_bar(app: &mut PhotocraftApp, ui: &mut egui::Ui) {
+                         }
+                         if crate::eraser_ui::options_bar(app, ui, tool)
+                             || crate::retouch_ui::options_bar(app, ui, tool)
++                            || crate::curve_arrow_tool::options_bar(app, ui, tool)
+                             || crate::vector_ui::options_bar(app, ui, tool)
+                             || crate::analysis_ui::options_bar(app, ui, tool)
+                             || crate::slice_ui::options_bar(app, ui, tool)
 diff --git a/crates/ui-egui/src/panels/toolbar.rs b/crates/ui-egui/src/panels/toolbar.rs
-index b158652..9a97604 100644
+index a8ed212..81ec490 100644
 --- a/crates/ui-egui/src/panels/toolbar.rs
 +++ b/crates/ui-egui/src/panels/toolbar.rs
-@@ -55,6 +55,7 @@ pub(crate) const TOOL_SECTIONS: &[&[&[Tool]]] = &[
+@@ -43,6 +43,7 @@ pub(crate) const TOOL_SECTIONS: &[&[&[Tool]]] = &[
          &[Tool::Type, Tool::VerticalType, Tool::VerticalTypeMask, Tool::HorizontalTypeMask],
          &[Tool::PathSelection, Tool::DirectSelection],
          &[Tool::Rectangle, Tool::EllipseShape, Tool::Triangle, Tool::Polygon, Tool::Star, Tool::Line, Tool::CustomShape],
@@ -925,10 +867,10 @@ index b158652..9a97604 100644
      &[&[Tool::Hand, Tool::RotateView], &[Tool::Zoom]],
  ];
 diff --git a/crates/ui-egui/src/state/tool.rs b/crates/ui-egui/src/state/tool.rs
-index 4fee37d..37e8abc 100644
+index 66aa7d5..20b5177 100644
 --- a/crates/ui-egui/src/state/tool.rs
 +++ b/crates/ui-egui/src/state/tool.rs
-@@ -75,6 +75,9 @@ pub enum Tool {
+@@ -75,13 +75,16 @@ pub enum Tool {
      Star,
      Line,
      CustomShape,
@@ -938,24 +880,15 @@ index 4fee37d..37e8abc 100644
      Slice,
      SliceSelect,
      Frame,
-@@ -150,6 +153,7 @@ impl Tool {
-             Self::Star => "star",
-             Self::Line => "line",
-             Self::CustomShape => "customShape",
-+            Self::CurveArrow => "curveArrow",
-             Self::Slice => "slice",
-             Self::SliceSelect => "sliceSelect",
-             Self::Frame => "frame",
-@@ -164,7 +168,7 @@ impl Tool {
-             .copied()
-     }
+ }
  
+ impl Tool {
 -    pub const ALL: [Tool; 69] = [
 +    pub const ALL: [Tool; 70] = [
          Tool::Move,
          Tool::Artboard,
          Tool::RectMarquee,
-@@ -231,6 +235,7 @@ impl Tool {
+@@ -148,6 +151,7 @@ impl Tool {
          Tool::Star,
          Tool::Line,
          Tool::CustomShape,
@@ -963,7 +896,7 @@ index 4fee37d..37e8abc 100644
          Tool::Slice,
          Tool::SliceSelect,
          Tool::Frame,
-@@ -307,6 +312,7 @@ impl Tool {
+@@ -224,6 +228,7 @@ impl Tool {
              Tool::Star => "Star Tool",
              Tool::Line => "Line Tool",
              Tool::CustomShape => "Custom Shape Tool",
@@ -971,7 +904,7 @@ index 4fee37d..37e8abc 100644
          }
      }
      pub fn is_type(self) -> bool {
-@@ -376,6 +382,7 @@ impl Tool {
+@@ -293,6 +298,7 @@ impl Tool {
              Tool::AddAnchorPoint | Tool::DeleteAnchorPoint | Tool::ConvertPoint => ' ',
              Tool::PathSelection | Tool::DirectSelection => 'A',
              Tool::Rectangle | Tool::EllipseShape | Tool::Triangle | Tool::Polygon | Tool::Star | Tool::Line | Tool::CustomShape => 'U',
@@ -980,10 +913,10 @@ index 4fee37d..37e8abc 100644
      }
      /// Glyph drawn in the toolbar (vector icons come later).
 diff --git a/crates/ui-egui/src/tools.rs b/crates/ui-egui/src/tools.rs
-index d23b04c..907a3e9 100644
+index 684c8db..3c2394b 100644
 --- a/crates/ui-egui/src/tools.rs
 +++ b/crates/ui-egui/src/tools.rs
-@@ -36,6 +36,7 @@ pub(super) mod shape_gradient_ui;
+@@ -42,6 +42,7 @@ pub(super) mod shape_gradient_ui;
  pub(super) mod shape_options;
  pub(super) mod shape_paint_ui;
  pub mod shape_stroke_ui;
@@ -991,12 +924,25 @@ index d23b04c..907a3e9 100644
  pub mod slice_ui;
  pub mod stroke_constraint;
  pub mod stroke_trace;
+diff --git a/crates/ui-egui/src/tools/corner_radius.rs b/crates/ui-egui/src/tools/corner_radius.rs
+index 2381e62..63d7221 100644
+--- a/crates/ui-egui/src/tools/corner_radius.rs
++++ b/crates/ui-egui/src/tools/corner_radius.rs
+@@ -182,7 +182,7 @@ fn target(layer: u64, live: &LiveShape) -> Option<Target> {
+             let rounded = (0..vertices.len()).filter(|&i| shapes::polygon_rounds_vertex(star_ratio, i)).collect();
+             Some(Target { layer, geom: Geom::Polygon { rect, sides, star_ratio, vertices, rounded }, radii: [corner_radius.max(0.0); 4] })
+         }
+-        LiveShape::Ellipse { .. } | LiveShape::Line { .. } | LiveShape::ArrowLine { .. } => None,
++        LiveShape::Ellipse { .. } | LiveShape::Line { .. } | LiveShape::ArrowLine { .. } | LiveShape::CurveArrow { .. } => None,
+     }
+ }
+ 
 diff --git a/crates/ui-egui/src/tools/curve_arrow_tool.rs b/crates/ui-egui/src/tools/curve_arrow_tool.rs
 new file mode 100644
-index 0000000..d671e49
+index 0000000..675bfe8
 --- /dev/null
 +++ b/crates/ui-egui/src/tools/curve_arrow_tool.rs
-@@ -0,0 +1,1109 @@
+@@ -0,0 +1,1037 @@
 +//! Curved Arrow tool ("Seta"): click points on the canvas and a filled arrow follows a smooth
 +//! curve through them, as a live `CurveArrow` shape layer (`shape.create {kind: "curveArrow"}`).
 +//!
@@ -1014,30 +960,17 @@ index 0000000..d671e49
 +
 +use std::sync::Mutex;
 +
-+use craft::behavior::kurbo::Point;
-+use craft::behavior::{CancelReason, Cursor, CursorIcon, GesturePhase, PointerButton};
-+use craft::keymap::Mods;
-+use craft::ui::buttons::Button;
-+use craft::theme::Srgba;
-+use craft::ui::choice::{Segmented, Swatch};
-+use craft::ui::canvas::{CanvasTool, ToolAction, ToolClaims, ToolContext, ToolHostResponse, ToolKey, ToolPath, ToolPointer};
-+use craft::ui::contract::{Bind, Entry, Props as _, Show as _};
-+use craft::ui::display::Divider;
-+use craft::ui::pickers::Select;
-+use craft::ui::primitives::{DataWidth, Draw, PaintShape};
-+use craft::ui::runtime::env::Label;
-+use craft::ui::style::DataColor;
-+use egui::{Color32, Pos2};
++use egui::{Color32, Pos2, Stroke};
 +use photocraft_doc::vector::LiveShape;
 +use photocraft_doc::{LayerContent, LayerId};
 +use photocraft_vector::curve_arrow as geo;
 +use serde_json::{Value, json};
 +
-+use super::option_cells;
 +use crate::PhotocraftApp;
-+use crate::canvas::document_display::CanvasHost;
-+use crate::canvas::tools::{FamilyTool, ToolScope};
++use crate::canvas::{ToolEvent, ViewXform};
++use crate::panels::opt_label;
 +use crate::state::Tool;
++use crate::widgets;
 +
 +// ------------------------------------------------------------------ options
 +
@@ -1083,7 +1016,7 @@ index 0000000..d671e49
 +    }
 +}
 +
-+/// Shared between the canvas tool and the options bar (both run on the UI thread).
++/// Shared between the canvas input, the overlay and the options bar (all on the UI thread).
 +#[derive(Default)]
 +struct Shared {
 +    options: Option<ArrowOptions>,
@@ -1093,9 +1026,29 @@ index 0000000..d671e49
 +    gesture: u64,
 +    /// Which group of settings the options bar shows: 0 head, 1 start, 2 line, 3 opacity.
 +    section: u8,
++    /// The first click of a new arrow; the layer is made at the second.
++    pending: Option<[f64; 2]>,
++    /// The arrow being drawn: clicks add points to it.
++    drawing: Option<LayerId>,
++    /// The point a drag moves: layer, index, the history key of the drag.
++    dragging: Option<(LayerId, usize, String)>,
++    /// The handle a drag moves: layer, point, whether the outgoing one, the history key.
++    bending: Option<(LayerId, usize, bool, String)>,
++    /// The last press (time in ms, document point), to tell a double click.
++    last_press: Option<(f64, [f64; 2])>,
 +}
 +
-+static SHARED: Mutex<Shared> = Mutex::new(Shared { options: None, selected: None, gesture: 0, section: 0 });
++static SHARED: Mutex<Shared> = Mutex::new(Shared {
++    options: None,
++    selected: None,
++    gesture: 0,
++    section: 0,
++    pending: None,
++    drawing: None,
++    dragging: None,
++    bending: None,
++    last_press: None,
++});
 +
 +fn shared<R>(f: impl FnOnce(&mut Shared) -> R) -> R {
 +    let mut guard = match SHARED.lock() {
@@ -1510,302 +1463,264 @@ index 0000000..d671e49
 +    best.map(|b| (b.1, b.2))
 +}
 +
-+// ------------------------------------------------------------------ the canvas tool
++// ------------------------------------------------------------------ canvas input
 +
-+/// The tool's state between passes, kept in `CanvasTools::curve_arrow`.
-+#[derive(Debug, Default)]
-+pub(crate) struct CurveArrowTool {
-+    /// The first click of a new arrow; the layer is made at the second.
-+    pending: Option<[f64; 2]>,
-+    /// The arrow being drawn: clicks add points to it.
-+    drawing: Option<LayerId>,
-+    /// The point a drag moves: layer, index, the history key of the drag.
-+    dragging: Option<(LayerId, usize, String)>,
-+    /// The handle a drag moves: layer, point, whether the outgoing one, the history key.
-+    bending: Option<(LayerId, usize, bool, String)>,
-+    /// The pointer over the canvas, in document units (the rubber band).
-+    hover: Option<[f64; 2]>,
-+}
-+
-+impl CurveArrowTool {
-+    fn finish(&mut self) -> bool {
-+        let had = self.pending.is_some() || self.drawing.is_some();
-+        self.pending = None;
-+        self.drawing = None;
++/// Ends the arrow being drawn (and a first click waiting for its second). True when one was.
++fn finish() -> bool {
++    shared(|s| {
++        let had = s.pending.is_some() || s.drawing.is_some();
++        s.pending = None;
++        s.drawing = None;
 +        had
-+    }
++    })
 +}
 +
-+/// The Curved Arrow tool for one pass.
-+pub(crate) fn tool<'a>(scope: &'a ToolScope<'a>, state: &'a mut CurveArrowTool, _host: CanvasHost) -> FamilyTool<'a> {
-+    Box::new(ArrowPass { scope, state })
++/// Hit radius in document pixels: a few screen points at the current zoom.
++fn reach(app: &PhotocraftApp) -> f64 {
++    8.0 / f64::from(app.point_zoom().max(0.01))
 +}
 +
-+/// After the host ran: ends a drag the host ended, and the arrow in progress when the tool or the
-+/// active layer changed.
-+pub(crate) fn drain(app: &mut PhotocraftApp, state: &mut CurveArrowTool, response: &ToolHostResponse) {
-+    if matches!(response.gesture, Some(GesturePhase::Commit | GesturePhase::Cancel)) {
-+        state.dragging = None;
-+        state.bending = None;
++/// Drops what refers to another layer than the active one (the arrow in progress, the selected
++/// point) and the drags when another tool is in use.
++fn forget_stale(app: &PhotocraftApp) {
++    let active = app.session.active().and_then(|st| st.active_layer);
++    let on = app.active_tool() == Tool::CurveArrow;
++    shared(|s| {
++        if s.drawing.is_some() && (s.drawing != active || !on) {
++            s.drawing = None;
++        }
++        if s.selected.is_some_and(|(id, _)| Some(id) != active) {
++            s.selected = None;
++        }
++        if !on {
++            s.pending = None;
++            s.dragging = None;
++            s.bending = None;
++        }
++    });
++}
++
++/// Pointer input for the Curved Arrow tool. True when consumed (always, with the tool active).
++pub fn pointer(app: &mut PhotocraftApp, ev: ToolEvent, mods: egui::Modifiers) -> bool {
++    if app.active_tool() != Tool::CurveArrow {
++        return false;
 +    }
-+    if app.ui.tool != Tool::CurveArrow {
-+        state.finish();
-+        state.dragging = None;
-+        state.bending = None;
-+        state.hover = None;
++    forget_stale(app);
++    match ev {
++        ToolEvent::Down { x, y, .. } => press(app, [x, y], mods),
++        ToolEvent::Move { x, y, .. } => drag(app, [x, y], mods),
++        ToolEvent::Up { x, y } => {
++            drag(app, [x, y], mods);
++            shared(|s| {
++                s.dragging = None;
++                s.bending = None;
++            });
++        }
++    }
++    true
++}
++
++fn press(app: &mut PhotocraftApp, at: [f64; 2], mods: egui::Modifiers) {
++    let reach = reach(app);
++    let now = crate::gpu_canvas::now_ms();
++    let double = shared(|s| {
++        let d = s.last_press.is_some_and(|(t, p)| now - t < 400.0 && dist(p, at) <= reach);
++        s.last_press = Some((now, at));
++        d
++    });
++    // A double click ends the arrow being drawn (its first click already added the point).
++    if double && shared(|s| s.drawing.is_some()) {
++        finish();
 +        return;
 +    }
-+    let active = app.session.active().and_then(|st| st.active_layer);
-+    if let Some(id) = state.drawing
-+        && active != Some(id)
-+    {
-+        state.drawing = None;
-+    }
-+    if let Some((id, _)) = selected()
-+        && active != Some(id)
-+    {
-+        select(None);
-+    }
-+}
-+
-+struct ArrowPass<'a> {
-+    scope: &'a ToolScope<'a>,
-+    state: &'a mut CurveArrowTool,
-+}
-+
-+fn doc_at(cx: &ToolContext<'_>, pos: Pos2) -> Option<[f64; 2]> {
-+    let p = cx.space()?.view.to_doc(pos);
-+    (p.x.is_finite() && p.y.is_finite()).then_some([p.x, p.y])
-+}
-+
-+fn reach(cx: &ToolContext<'_>) -> f64 {
-+    cx.space().map_or(6.0, |s| s.view.doc_len(cx.reach().max(6.0)))
-+}
-+
-+impl CanvasTool for ArrowPass<'_> {
-+    fn press(&mut self, pointer: &ToolPointer, cx: &mut ToolContext<'_>) -> ToolAction {
-+        let Some(at) = doc_at(cx, pointer.pos) else { return ToolAction::Ignored };
-+        let reach = reach(cx);
-+        let state = &mut *self.state;
-+        self.scope.with_app(|app| {
-+            let arrow = active_arrow(app);
-+            // A double click ends the arrow being drawn (its first click already added the point).
-+            if pointer.clicks >= 2 && state.drawing.is_some() {
-+                state.finish();
-+                return ToolAction::Done;
-+            }
-+            if let Some(arrow) = &arrow {
-+                if let Some((_, i)) = selected().filter(|(id, _)| *id == arrow.id)
-+                    && let Some(out) = hit_handle(arrow, i, at, reach)
-+                {
-+                    state.bending = Some((arrow.id, i, out, next_key("bend")));
-+                    return ToolAction::Claimed;
-+                }
-+                if let Some(i) = hit_point(arrow, at, reach) {
-+                    if pointer.mods.alt {
-+                        remove_point(app, arrow, i);
-+                        return ToolAction::Done;
-+                    }
-+                    select(Some((arrow.id, i)));
-+                    state.dragging = Some((arrow.id, i, next_key("move")));
-+                    return ToolAction::Claimed;
-+                }
-+                if state.drawing == Some(arrow.id) {
-+                    append(app, arrow, at);
-+                    return ToolAction::Done;
-+                }
-+                if !pointer.mods.alt
-+                    && let Some((seg, t)) = hit_curve(arrow, at, reach)
-+                    && let Some(i) = insert_point(app, arrow, seg, t)
-+                {
-+                    select(Some((arrow.id, i)));
-+                    state.dragging = Some((arrow.id, i, next_key("move")));
-+                    return ToolAction::Claimed;
-+                }
-+            }
-+            if pointer.mods.alt {
-+                return ToolAction::Done;
-+            }
-+            match state.pending.take() {
-+                Some(first) if dist(first, at) >= 1.0 => {
-+                    if let Some(id) = create(app, [first, at]) {
-+                        state.drawing = Some(id);
-+                        select(Some((id, 1)));
-+                    }
-+                }
-+                _ => {
-+                    state.pending = Some(at);
-+                    state.drawing = None;
-+                    select(None);
-+                }
-+            }
-+            ToolAction::Done
-+        })
-+    }
-+
-+    fn drag(&mut self, pointer: &ToolPointer, cx: &mut ToolContext<'_>) {
-+        if let Some((id, index, out, key)) = self.state.bending.clone() {
-+            let Some(at) = doc_at(cx, pointer.pos) else { return };
-+            self.state.hover = Some(at);
-+            let alone = pointer.mods.alt;
-+            self.scope.with_app(|app| {
-+                if let Some(arrow) = active_arrow(app).filter(|a| a.id == id) {
-+                    move_handle(app, &arrow, index, out, at, alone, &key);
-+                }
-+            });
++    let arrow = active_arrow(app);
++    if let Some(arrow) = &arrow {
++        if let Some((_, i)) = selected().filter(|(id, _)| *id == arrow.id)
++            && let Some(out) = hit_handle(arrow, i, at, reach)
++        {
++            let key = next_key("bend");
++            shared(|s| s.bending = Some((arrow.id, i, out, key)));
 +            return;
 +        }
-+        let Some((id, index, key)) = self.state.dragging.clone() else { return };
-+        let Some(at) = doc_at(cx, pointer.pos) else { return };
-+        self.state.hover = Some(at);
-+        self.scope.with_app(|app| {
-+            let Some(arrow) = active_arrow(app).filter(|a| a.id == id) else { return };
-+            let Some(old) = arrow.points.get(index) else { return };
-+            if dist(*old, at) < 0.25 {
++        if let Some(i) = hit_point(arrow, at, reach) {
++            if mods.alt {
++                remove_point(app, arrow, i);
 +                return;
 +            }
-+            let mut points = arrow.points.clone();
-+            points[index] = at;
-+            edit(app, id, json!({"points": points}), Some(&key));
-+        });
-+    }
-+
-+    fn release(&mut self, pointer: &ToolPointer, cx: &mut ToolContext<'_>) {
-+        self.drag(pointer, cx);
-+        self.state.dragging = None;
-+        self.state.bending = None;
-+    }
-+
-+    fn hover(&mut self, pointer: &ToolPointer, cx: &mut ToolContext<'_>) {
-+        self.state.hover = doc_at(cx, pointer.pos);
-+    }
-+
-+    fn cancel(&mut self, _reason: CancelReason, _cx: &mut ToolContext<'_>) {
-+        self.state.dragging = None;
-+        self.state.bending = None;
-+    }
-+
-+    fn claims(&self) -> ToolClaims {
-+        if selected().is_some() { ToolClaims::NONE.deletes() } else { ToolClaims::NONE }
-+    }
-+
-+    fn key(&mut self, key: &ToolKey, _cx: &mut ToolContext<'_>) -> bool {
-+        match key {
-+            ToolKey::Submit | ToolKey::Cancel => self.state.finish(),
-+            ToolKey::Delete { .. } => {
-+                let Some((id, i)) = selected() else { return false };
-+                self.scope.with_app(|app| {
-+                    let Some(arrow) = active_arrow(app).filter(|a| a.id == id) else { return false };
-+                    remove_point(app, &arrow, i);
-+                    true
-+                })
-+            }
-+            _ => false,
++            select(Some((arrow.id, i)));
++            let key = next_key("move");
++            shared(|s| s.dragging = Some((arrow.id, i, key)));
++            return;
++        }
++        if shared(|s| s.drawing) == Some(arrow.id) {
++            append(app, arrow, at);
++            return;
++        }
++        if !mods.alt
++            && let Some((seg, t)) = hit_curve(arrow, at, reach)
++            && let Some(i) = insert_point(app, arrow, seg, t)
++        {
++            select(Some((arrow.id, i)));
++            let key = next_key("move");
++            shared(|s| s.dragging = Some((arrow.id, i, key)));
++            return;
 +        }
 +    }
-+
-+    fn paint(&self, draw: &Draw<'_>, cx: &ToolContext<'_>) {
-+        let Some(space) = cx.space() else { return };
-+        let screen = |p: [f64; 2]| space.view.to_screen(Point::new(p[0], p[1]));
-+        let dark = DataColor::new(Color32::from_black_alpha(150));
-+        let light = DataColor::new(Color32::WHITE);
-+        let accent = DataColor::new(Color32::from_rgb(0x2d, 0x8c, 0xff));
-+        let start_col = DataColor::new(Color32::from_rgb(0x34, 0xc7, 0x59));
-+        let head_col = DataColor::new(Color32::from_rgb(0xff, 0x8a, 0x00));
-+        let line = |pts: &[Pos2]| {
-+            if pts.len() >= 2 {
-+                draw.stroke(&PaintShape::Path(pts.to_vec()), DataWidth::points(3.0), dark);
-+                draw.stroke(&PaintShape::Path(pts.to_vec()), DataWidth::points(1.0), light);
++    if mods.alt {
++        return;
++    }
++    match shared(|s| s.pending.take()) {
++        Some(first) if dist(first, at) >= 1.0 => {
++            if let Some(id) = create(app, [first, at]) {
++                shared(|s| s.drawing = Some(id));
++                select(Some((id, 1)));
 +            }
-+        };
-+        let handle = |p: Pos2, fill: DataColor, r: f32| {
-+            draw.data_fill(&PaintShape::Circle(p, r + 1.5), dark);
-+            draw.data_fill(&PaintShape::Circle(p, r), fill);
-+        };
-+        let arrow = self.scope.with_app(|app| active_arrow(app));
-+        let sel = selected();
-+        if let Some(arrow) = &arrow {
-+            let mut pts: Vec<Pos2> = Vec::new();
-+            for s in geo::guide_segments(&arrow.points, &arrow.handles) {
-+                for k in 0..=24 {
-+                    pts.push(screen(bez_at(&s, f64::from(k) / 24.0)));
++        }
++        _ => {
++            shared(|s| {
++                s.pending = Some(at);
++                s.drawing = None;
++            });
++            select(None);
++        }
++    }
++}
++
++fn drag(app: &mut PhotocraftApp, at: [f64; 2], mods: egui::Modifiers) {
++    if let Some((id, index, out, key)) = shared(|s| s.bending.clone()) {
++        if let Some(arrow) = active_arrow(app).filter(|a| a.id == id) {
++            move_handle(app, &arrow, index, out, at, mods.alt, &key);
++        }
++        return;
++    }
++    let Some((id, index, key)) = shared(|s| s.dragging.clone()) else { return };
++    let Some(arrow) = active_arrow(app).filter(|a| a.id == id) else { return };
++    let Some(old) = arrow.points.get(index) else { return };
++    if dist(*old, at) < 0.25 {
++        return;
++    }
++    let mut points = arrow.points.clone();
++    points[index] = at;
++    edit(app, id, json!({"points": points}), Some(&key));
++}
++
++/// Enter or Escape ends the arrow being drawn; Delete (or Backspace) removes the selected point.
++/// True when a key was used.
++pub fn keys(app: &mut PhotocraftApp, ctx: &egui::Context) -> bool {
++    use crate::shortcut_dispatch::Focus;
++    if app.active_tool() != Tool::CurveArrow || app.ui.text_edit.is_some() || matches!(Focus::of(ctx), Focus::Text | Focus::DeletingWidget) {
++        return false;
++    }
++    forget_stale(app);
++    let drawing = shared(|s| s.pending.is_some() || s.drawing.is_some());
++    if drawing && ctx.input_mut(|i| i.consume_key(egui::Modifiers::NONE, egui::Key::Enter) || i.consume_key(egui::Modifiers::NONE, egui::Key::Escape)) {
++        finish();
++        return true;
++    }
++    if let Some((id, i)) = selected()
++        && ctx.input_mut(|inp| inp.consume_key(egui::Modifiers::NONE, egui::Key::Delete) || inp.consume_key(egui::Modifiers::NONE, egui::Key::Backspace))
++    {
++        if let Some(arrow) = active_arrow(app).filter(|a| a.id == id) {
++            remove_point(app, &arrow, i);
++        }
++        return true;
++    }
++    false
++}
++
++/// The guide over the canvas: the centre curve, the points (start green, tip orange, the selected
++/// one blue), the selected point's curve handles, and the rubber band of the arrow being drawn.
++pub fn draw_overlay(app: &PhotocraftApp, painter: &egui::Painter, xf: &ViewXform) {
++    if app.active_tool() != Tool::CurveArrow {
++        return;
++    }
++    let screen = |p: [f64; 2]| xf.to_screen(p[0] as f32, p[1] as f32);
++    let dark = Color32::from_black_alpha(150);
++    let light = Color32::WHITE;
++    let accent = Color32::from_rgb(0x2d, 0x8c, 0xff);
++    let start_col = Color32::from_rgb(0x34, 0xc7, 0x59);
++    let head_col = Color32::from_rgb(0xff, 0x8a, 0x00);
++    let line = |pts: Vec<Pos2>| {
++        if pts.len() >= 2 {
++            painter.add(egui::Shape::line(pts.clone(), Stroke::new(3.0, dark)));
++            painter.add(egui::Shape::line(pts, Stroke::new(1.0, light)));
++        }
++    };
++    let knob = |p: Pos2, fill: Color32, r: f32| {
++        painter.circle_filled(p, r + 1.5, dark);
++        painter.circle_filled(p, r, fill);
++    };
++    let hover = painter.ctx().input(|i| i.pointer.hover_pos()).map(|p| xf.to_doc(p));
++    let (pending, drawing, dragging) = shared(|s| (s.pending, s.drawing, s.dragging.is_some() || s.bending.is_some()));
++    let sel = selected();
++    if let Some(arrow) = active_arrow(app) {
++        let mut pts: Vec<Pos2> = Vec::new();
++        for s in geo::guide_segments(&arrow.points, &arrow.handles) {
++            for k in 0..=24 {
++                pts.push(screen(bez_at(&s, f64::from(k) / 24.0)));
++            }
++        }
++        line(pts);
++        let last = arrow.points.len().saturating_sub(1);
++        if let Some((_, i)) = sel.filter(|(id, _)| *id == arrow.id)
++            && let Some(k) = arrow.knots().get(i).copied()
++        {
++            let fill = if arrow.custom(i) { light } else { Color32::from_gray(200) };
++            for (p, shown) in [(k.i, i > 0), (k.o, i < last)] {
++                if shown && dist(p, k.a) > 0.5 {
++                    line(vec![screen(k.a), screen(p)]);
++                    let c = screen(p);
++                    painter.circle_filled(c, 4.5, dark);
++                    painter.circle_filled(c, 3.0, fill);
++                    painter.circle_filled(c, 1.5, accent);
 +                }
 +            }
-+            line(&pts);
-+            let last = arrow.points.len().saturating_sub(1);
-+            // the selected point's curve handles
-+            if let Some((_, i)) = sel.filter(|(id, _)| *id == arrow.id)
-+                && let Some(k) = arrow.knots().get(i).copied()
-+            {
-+                let knob = if arrow.custom(i) { light } else { DataColor::new(Color32::from_gray(200)) };
-+                for (p, shown) in [(k.i, i > 0), (k.o, i < last)] {
-+                    if shown && dist(p, k.a) > 0.5 {
-+                        line(&[screen(k.a), screen(p)]);
-+                        let c = screen(p);
-+                        draw.data_fill(&PaintShape::Circle(c, 4.5), dark);
-+                        draw.data_fill(&PaintShape::Circle(c, 3.0), knob);
-+                        draw.data_fill(&PaintShape::Circle(c, 1.5), accent);
-+                    }
-+                }
-+            }
-+            for (i, p) in arrow.points.iter().enumerate() {
-+                let fill = if sel == Some((arrow.id, i)) {
-+                    accent
-+                } else if i == 0 {
-+                    start_col
-+                } else if i == last {
-+                    head_col
-+                } else {
-+                    light
-+                };
-+                handle(screen(*p), fill, 4.0);
-+            }
-+            if self.state.drawing == Some(arrow.id)
-+                && self.state.dragging.is_none()
-+                && self.state.bending.is_none()
-+                && let (Some(end), Some(h)) = (arrow.points.last(), self.state.hover)
-+            {
-+                draw.dashed(&[screen(*end), screen(h)], draw.dashes(), DataWidth::points(1.0), light);
-+            }
 +        }
-+        if let Some(p) = self.state.pending {
-+            handle(screen(p), start_col, 4.0);
-+            if let Some(h) = self.state.hover {
-+                draw.dashed(&[screen(p), screen(h)], draw.dashes(), DataWidth::points(1.0), light);
-+            }
++        for (i, p) in arrow.points.iter().enumerate() {
++            let fill = if sel == Some((arrow.id, i)) {
++                accent
++            } else if i == 0 {
++                start_col
++            } else if i == last {
++                head_col
++            } else {
++                light
++            };
++            knob(screen(*p), fill, 4.0);
++        }
++        if drawing == Some(arrow.id)
++            && !dragging
++            && let (Some(end), Some(h)) = (arrow.points.last(), hover)
++        {
++            painter.add(egui::Shape::dashed_line(&[screen(*end), screen(h)], Stroke::new(1.0, light), 4.0, 4.0));
 +        }
 +    }
-+
-+    fn cursor(&self, cx: &ToolContext<'_>) -> Cursor {
-+        let Some(at) = cx.pointer.as_ref().and_then(|p| doc_at(cx, p.pos)) else { return Cursor::System(CursorIcon::Crosshair) };
-+        let reach = reach(cx);
-+        let on_handle = self.scope.with_app(|app| {
-+            let a = active_arrow(app)?;
-+            let (_, i) = selected().filter(|(id, _)| *id == a.id)?;
-+            hit_handle(&a, i, at, reach)
-+        });
-+        if on_handle.is_some() {
-+            return Cursor::System(CursorIcon::Move);
-+        }
-+        let over = self.scope.with_app(|app| active_arrow(app).and_then(|a| hit_point(&a, at, reach)));
-+        match over {
-+            Some(_) if cx.mods.alt => Cursor::System(CursorIcon::NotAllowed),
-+            Some(_) => Cursor::System(CursorIcon::Move),
-+            None => Cursor::System(CursorIcon::Crosshair),
++    if let Some(p) = pending {
++        knob(screen(p), start_col, 4.0);
++        if let Some(h) = hover {
++            painter.add(egui::Shape::dashed_line(&[screen(p), screen(h)], Stroke::new(1.0, light), 4.0, 4.0));
 +        }
 +    }
-+
-+    /// ⌘ is the Move tool's stand-in.
-+    fn takes(&self, button: PointerButton, mods: Mods) -> bool {
-+        button == PointerButton::Primary && !mods.cmd
++    // the rubber band follows the pointer
++    if pending.is_some() || drawing.is_some() {
++        painter.ctx().request_repaint();
 +    }
++}
 +
-+    fn autoscrolls(&self) -> bool {
-+        self.state.dragging.is_some() || self.state.bending.is_some()
++/// The cursor over the canvas: a move cross over a point or handle (not allowed with ⌥ over a
++/// point, which removes it), else the crosshair.
++pub fn cursor(app: &PhotocraftApp, at: [f64; 2], alt: bool) -> egui::CursorIcon {
++    let reach = reach(app);
++    let Some(a) = active_arrow(app) else { return egui::CursorIcon::Crosshair };
++    if let Some((_, i)) = selected().filter(|(id, _)| *id == a.id)
++        && hit_handle(&a, i, at, reach).is_some()
++    {
++        return egui::CursorIcon::Move;
 +    }
-+
-+    fn command_form(&self) -> ToolPath {
-+        ToolPath::Command("the shape.create command with kind curveArrow")
++    match hit_point(&a, at, reach) {
++        Some(_) if alt => egui::CursorIcon::NotAllowed,
++        Some(_) => egui::CursorIcon::Move,
++        None => egui::CursorIcon::Crosshair,
 +    }
 +}
 +
@@ -1840,12 +1755,23 @@ index 0000000..d671e49
 +    }
 +}
 +
++
++/// A captioned number field of the bar; true when its value changed.
++fn field(ui: &mut egui::Ui, caption: &str, value: &mut f32, range: std::ops::RangeInclusive<f32>, unit: &str, whole: bool, tip: &str) -> bool {
++    let was = *value;
++    opt_label(ui, caption);
++    let r = if whole { widgets::value_field_whole(ui, value, range, unit, 52.0) } else { widgets::value_field(ui, value, range, unit, 56.0) };
++    r.on_hover_text(tip);
++    (*value - was).abs() > f32::EPSILON
++}
++
 +/// The Curved Arrow tool's options bar; false for another tool. The widths always show; a
-+/// switch picks the head, the start or the line settings.
++/// switch picks the head, the start, the line or the opacity settings.
 +pub fn options_bar(app: &mut PhotocraftApp, ui: &mut egui::Ui, tool: Tool) -> bool {
 +    if tool != Tool::CurveArrow {
 +        return false;
 +    }
++    forget_stale(app);
 +    let arrow = active_arrow(app);
 +    let mut o = options();
 +    // An arrow's own values show while it is selected.
@@ -1868,136 +1794,85 @@ index 0000000..d671e49
 +    let before = o;
 +    let sel = selected().filter(|(id, _)| arrow.as_ref().is_some_and(|a| a.id == *id));
 +
-+    // widths
-+    let _ = option_cells::number(tl!("Início:"), &mut o.start_width, 0.5..=2000.0).unit("px").popup_slider().tooltip(tl!("Espessura no início da seta")).show(ui);
-+    let _ = option_cells::number(tl!("Fim:"), &mut o.end_width, 0.5..=2000.0).unit("px").popup_slider().tooltip(tl!("Espessura perto da ponta")).show(ui);
++    // widths, the selected point, its colour and curve
++    field(ui, "Início", &mut o.start_width, 0.5..=2000.0, "px", false, "Espessura no início da seta");
++    field(ui, "Fim", &mut o.end_width, 0.5..=2000.0, "px", false, "Espessura perto da ponta");
 +    let mut point_width = None;
++    let mut clear_color = None;
++    let mut auto_curve = None;
 +    if let (Some(a), Some((_, i))) = (&arrow, sel)
 +        && let Some(w) = a.widths.get(i)
 +    {
 +        let mut v = *w as f32;
-+        let shown = v;
-+        let _ = option_cells::number(Label::from(format!("Ponto {}:", i + 1)), &mut v, 0.5..=2000.0)
-+            .unit("px")
-+            .popup_slider()
-+            .tooltip(tl!("Espessura do ponto selecionado"))
-+            .show(ui);
-+        if (v - shown).abs() > f32::EPSILON {
++        if field(ui, &format!("Ponto {}", i + 1), &mut v, 0.5..=2000.0, "px", false, "Espessura do ponto selecionado") {
 +            point_width = Some((i, f64::from(v)));
 +        }
-+    }
-+    // the selected point's colour: the swatch opens the colour picker, × takes the colour off
-+    let mut clear_color = None;
-+    if let (Some(a), Some((_, i))) = (&arrow, sel) {
 +        let own = a.colors.get(i).copied().flatten();
-+        let base = point_base_color(app, a);
-+        let rgb = own.map_or(base, |c| c.to_rgb());
-+        if Swatch::new(Label::from(tl!("Cor do ponto")), Srgba::from_rgb_array(rgb))
-+            .show(ui)
-+            .clicked
-+        {
-+            crate::color_picker_ui::open_for_command(
-+                app,
-+                &crate::color_picker_ui::title_for(tl!("Cor do ponto")),
-+                rgb,
-+                "shape.edit",
-+                json!({"layer": a.id.0, "pointColor": i}),
-+            );
++        let rgb = own.map_or_else(|| point_base_color(app, a), |c| c.to_rgb());
++        let shown = Color32::from_rgb((rgb[0].clamp(0.0, 1.0) * 255.0) as u8, (rgb[1].clamp(0.0, 1.0) * 255.0) as u8, (rgb[2].clamp(0.0, 1.0) * 255.0) as u8);
++        if widgets::color_swatch_button(ui, shown, "Cor do ponto (o degradê segue a curva)").clicked() {
++            crate::color_picker_ui::open_for_command(app, "Cor do ponto", rgb, "shape.edit", json!({"layer": a.id.0, "pointColor": i}));
 +        }
-+        if own.is_some()
-+            && Button::new(Label::from("×")).tooltip(tl!("Tira a cor deste ponto (volta a misturar com os vizinhos)")).show(ui).clicked()
-+        {
++        if own.is_some() && widgets::secondary_button(ui, "×", 0.0).on_hover_text("Tira a cor deste ponto (volta a misturar com os vizinhos)").clicked() {
 +            clear_color = Some(i);
 +        }
++        if a.custom(i) && widgets::secondary_button(ui, "Curva auto", 0.0).on_hover_text("Volta a curva deste ponto para a automática").clicked() {
++            auto_curve = Some(i);
++        }
 +    }
-+    let auto_curve = match (&arrow, sel) {
-+        (Some(a), Some((_, i))) if a.custom(i) => Button::new(Label::from(tl!("Curva auto")))
-+            .tooltip(tl!("Volta a curva deste ponto para a automática"))
-+            .show(ui)
-+            .clicked()
-+            .then_some(i),
-+        _ => None,
-+    };
-+    let flip = Button::new(Label::from(tl!("Inverter"))).enabled(arrow.is_some()).show(ui).clicked();
-+    Divider::vertical().show(ui);
++    let flip = ui.add_enabled_ui(arrow.is_some(), |ui| widgets::secondary_button(ui, "Inverter", 0.0).on_hover_text("Troca a ponta com o início").clicked()).inner;
++    widgets::vline(ui, 22.0);
 +
 +    // which settings
-+    let sections: Vec<Entry<u8>> = SECTIONS.iter().map(|(v, l)| Entry::new(*v, Label::from(*l))).collect();
-+    let section = shared(|s| s.section);
-+    if let Some(v) = Segmented::new(tl!("Ajustar"), Bind::given(section), &sections).show(ui).value().copied() {
-+        shared(|s| s.section = v);
++    let mut section = shared(|s| s.section);
++    for (v, label) in SECTIONS {
++        if ui.selectable_label(section == v, label).clicked() {
++            section = v;
++        }
 +    }
-+    match shared(|s| s.section) {
++    shared(|s| s.section = section);
++    widgets::vline(ui, 22.0);
++    match section {
 +        1 => {
-+            let tails: Vec<Entry<u8>> = TAILS.iter().map(|(v, l)| Entry::new(*v, Label::from(*l))).collect();
-+            if let Some(v) = Select::new(tl!("Formato:"), Bind::given(o.tail), &tails).show(ui).events.committed().copied() {
-+                o.tail = v;
-+            }
-+            let _ = option_cells::number(tl!("Arred.:"), &mut o.tail_round, 0.0..=100.0)
-+                .whole()
-+                .unit("%")
-+                .popup_slider()
-+                .tooltip(tl!("Arredondar o início (0 = quadrado, 100 = redondo)"))
-+                .show(ui);
++            opt_label(ui, "Formato");
++            widgets::dropdown(ui, "curve-arrow-tail", "Formato do início", &mut o.tail, &TAILS, 110.0);
++            field(ui, "Arred.", &mut o.tail_round, 0.0..=100.0, "%", true, "Arredondar o início (0 = quadrado, 100 = redondo)");
 +        }
 +        2 => {
-+            let lines: Vec<Entry<u8>> = LINES.iter().map(|(v, l)| Entry::new(*v, Label::from(*l))).collect();
-+            if let Some(v) = Select::new(tl!("Linha:"), Bind::given(line_kind(&o)), &lines).show(ui).events.committed().copied() {
-+                match v {
++            let mut kind = line_kind(&o);
++            opt_label(ui, "Linha");
++            if widgets::dropdown(ui, "curve-arrow-line", "Linha", &mut kind, &LINES, 110.0) {
++                match kind {
 +                    0 => o.dash = 0.0,
 +                    2 => (o.dash, o.gap, o.dash_round) = (1.0, 1.0, 100.0),
 +                    _ => (o.dash, o.gap, o.dash_round) = (2.0, 1.0, 0.0),
 +                }
 +            }
 +            if o.dash > 0.0 {
-+                let _ = option_cells::number(tl!("Traço:"), &mut o.dash, 0.1..=50.0)
-+                    .unit("×")
-+                    .popup_slider()
-+                    .tooltip(tl!("Comprimento de cada traço, em espessuras da linha"))
-+                    .show(ui);
-+                let _ = option_cells::number(tl!("Espaço:"), &mut o.gap, 0.0..=50.0)
-+                    .unit("×")
-+                    .popup_slider()
-+                    .tooltip(tl!("Espaço entre os traços, em espessuras da linha"))
-+                    .show(ui);
-+                let _ = option_cells::number(tl!("Arred.:"), &mut o.dash_round, 0.0..=100.0)
-+                    .whole()
-+                    .unit("%")
-+                    .popup_slider()
-+                    .tooltip(tl!("Arredondar as pontas dos traços (100 com traço 1× = bolinhas)"))
-+                    .show(ui);
++                field(ui, "Traço", &mut o.dash, 0.1..=50.0, "×", false, "Comprimento de cada traço, em espessuras da linha");
++                field(ui, "Espaço", &mut o.gap, 0.0..=50.0, "×", false, "Espaço entre os traços, em espessuras da linha");
++                field(ui, "Arred.", &mut o.dash_round, 0.0..=100.0, "%", true, "Arredondar as pontas dos traços (100 com traço 1× = bolinhas)");
 +            }
 +        }
 +        3 => {
-+            let _ = option_cells::number(tl!("Opac. início:"), &mut o.fade_start, 0.0..=100.0)
-+                .whole()
-+                .unit("%")
-+                .popup_slider()
-+                .tooltip(tl!("Opacidade no começo da seta (degradê até a ponta)"))
-+                .show(ui);
-+            let _ = option_cells::number(tl!("Opac. ponta:"), &mut o.fade_end, 0.0..=100.0)
-+                .whole()
-+                .unit("%")
-+                .popup_slider()
-+                .tooltip(tl!("Opacidade na ponta da seta"))
-+                .show(ui);
++            field(ui, "Opac. início", &mut o.fade_start, 0.0..=100.0, "%", true, "Opacidade no começo da seta (o degradê segue a curva)");
++            field(ui, "Opac. ponta", &mut o.fade_end, 0.0..=100.0, "%", true, "Opacidade na ponta da seta");
 +        }
 +        _ => {
-+            let heads: Vec<Entry<u8>> = HEADS.iter().map(|(v, l)| Entry::new(*v, Label::from(*l))).collect();
-+            if let Some(v) = Select::new(tl!("Formato:"), Bind::given(o.head), &heads).show(ui).events.committed().copied() {
-+                o.head = v;
-+            }
-+            let _ = option_cells::number(tl!("Compr.:"), &mut o.head_length, 1.0..=4000.0).unit("px").popup_slider().tooltip(tl!("Comprimento da ponta")).show(ui);
-+            let _ = option_cells::number(tl!("Larg.:"), &mut o.head_width, 1.0..=4000.0).unit("px").popup_slider().tooltip(tl!("Largura da ponta")).show(ui);
-+            let _ = option_cells::number(tl!("Bico:"), &mut o.tip_round, 0.0..=100.0).whole().unit("%").popup_slider().tooltip(tl!("Arredondar o bico da ponta")).show(ui);
-+            let _ = option_cells::number(tl!("Abas:"), &mut o.barb_round, 0.0..=100.0).whole().unit("%").popup_slider().tooltip(tl!("Arredondar as abas da ponta")).show(ui);
++            opt_label(ui, "Formato");
++            widgets::dropdown(ui, "curve-arrow-head", "Formato da ponta", &mut o.head, &HEADS, 110.0);
++            field(ui, "Compr.", &mut o.head_length, 1.0..=4000.0, "px", false, "Comprimento da ponta");
++            field(ui, "Larg.", &mut o.head_width, 1.0..=4000.0, "px", false, "Largura da ponta");
++            field(ui, "Bico", &mut o.tip_round, 0.0..=100.0, "%", true, "Arredondar o bico da ponta");
++            field(ui, "Abas", &mut o.barb_round, 0.0..=100.0, "%", true, "Arredondar as abas da ponta");
 +        }
 +    }
 +
 +    // what changed
 +    set_options(o);
 +    let Some(a) = arrow else {
-+        option_cells::hint(ui, tl!("Clique os pontos na imagem · Enter termina"));
++        widgets::vline(ui, 22.0);
++        ui.label(egui::RichText::new("Clique os pontos na imagem · Enter termina").weak());
 +        return true;
 +    };
 +    let mut patch = serde_json::Map::new();
@@ -2047,10 +1922,9 @@ index 0000000..d671e49
 +        let points: Vec<[f64; 2]> = a.points.iter().rev().copied().collect();
 +        // The widths stay in arrow order, so the start stays thin and the head end thick.
 +        patch.insert("points".into(), json!(points));
-+        // each point's handles swap sides
++        // each point's handles swap sides, and each point keeps its colour
 +        let handles: Vec<Option<[f64; 4]>> = a.handle_list().iter().rev().map(|h| h.map(|h| [h[2], h[3], h[0], h[1]])).collect();
 +        patch.insert("handles".into(), json!(handles));
-+        // each point keeps its colour
 +        let colors: Vec<Value> = a.color_list().into_iter().rev().collect();
 +        patch.insert("colors".into(), json!(colors));
 +        select(None);
@@ -2106,33 +1980,11 @@ index 0000000..d671e49
 +        assert!(bent.custom(0) && !bent.custom(1));
 +    }
 +}
-diff --git a/crates/ui-egui/src/tools/shape_controls.rs b/crates/ui-egui/src/tools/shape_controls.rs
-index db78d7f..c390367 100644
---- a/crates/ui-egui/src/tools/shape_controls.rs
-+++ b/crates/ui-egui/src/tools/shape_controls.rs
-@@ -322,7 +322,7 @@ fn corner_target(layer: u64, live: &LiveShape) -> Option<CornerTarget> {
-                 .collect();
-             Some(CornerTarget::new(layer, corners, false))
-         }
--        LiveShape::Ellipse { .. } | LiveShape::Line { .. } | LiveShape::ArrowLine { .. } => None,
-+        LiveShape::Ellipse { .. } | LiveShape::Line { .. } | LiveShape::ArrowLine { .. } | LiveShape::CurveArrow { .. } => None,
-     }
- }
- 
-@@ -361,7 +361,7 @@ fn rounded_path(live: &LiveShape, radii: &[f64]) -> Option<Path> {
-             Some(shapes::live_path(&LiveShape::Polygon { rect, sides, star_ratio, corner_radius }))
-         }
-         LiveShape::Triangle { rect, .. } => Some(shapes::live_path(&LiveShape::Triangle { rect, corner_radius: radii.first().copied().unwrap_or(0.0) })),
--        LiveShape::Ellipse { .. } | LiveShape::Line { .. } | LiveShape::ArrowLine { .. } => None,
-+        LiveShape::Ellipse { .. } | LiveShape::Line { .. } | LiveShape::ArrowLine { .. } | LiveShape::CurveArrow { .. } => None,
-     }
- }
- 
 diff --git a/crates/ui-egui/src/tools/tool_reset.rs b/crates/ui-egui/src/tools/tool_reset.rs
-index 1084b17..bb12296 100644
+index 0351a0e..be95e71 100644
 --- a/crates/ui-egui/src/tools/tool_reset.rs
 +++ b/crates/ui-egui/src/tools/tool_reset.rs
-@@ -301,6 +301,7 @@ pub fn option_keys(tool: Tool) -> &'static [&'static str] {
+@@ -277,6 +277,7 @@ pub fn option_keys(tool: Tool) -> &'static [&'static str] {
          | Tool::PathSelection
          | Tool::DirectSelection
          | Tool::SliceSelect
@@ -2141,18 +1993,21 @@ index 1084b17..bb12296 100644
          | Tool::DeleteAnchorPoint
          | Tool::ConvertPoint
 diff --git a/crates/ui-egui/src/tools/vector_ui/options.rs b/crates/ui-egui/src/tools/vector_ui/options.rs
-index 5668bd2..d687f74 100644
+index 39519be..9254ed7 100644
 --- a/crates/ui-egui/src/tools/vector_ui/options.rs
 +++ b/crates/ui-egui/src/tools/vector_ui/options.rs
-@@ -318,6 +318,8 @@ fn live_of(live: &photocraft_doc::vector::LiveShape) -> fw::LiveShape {
-         // One Corner radius field: a triangle has no sides or star ratio.
-         Doc::Triangle { rect, corner_radius } => fw::LiveShape::triangle(rect[2], rect[3], *corner_radius),
-         Doc::Line { weight, .. } => fw::LiveShape::line(*weight),
-+        // The Curved Arrow tool's bar edits it; here it shows as a plain path.
-+        Doc::CurveArrow { .. } => fw::LiveShape::line(1.0),
-         Doc::ArrowLine { weight, start, end, width, length, concavity, .. } => {
-             let mut arrows = Arrowheads::new();
-             arrows.start = *start;
+@@ -377,7 +377,10 @@ pub fn shape_properties(app: &mut PhotocraftApp, ui: &mut egui::Ui, id: photocra
+                     }
+                 });
+             }
+-            photocraft_doc::vector::LiveShape::Line { .. } | photocraft_doc::vector::LiveShape::ArrowLine { .. } => {}
++            // The Curved Arrow tool's own bar edits an arrow.
++            photocraft_doc::vector::LiveShape::Line { .. }
++            | photocraft_doc::vector::LiveShape::ArrowLine { .. }
++            | photocraft_doc::vector::LiveShape::CurveArrow { .. } => {}
+         }
+         ui.vertical(|ui| match live {
+             photocraft_doc::vector::LiveShape::Rect { radii, .. } => {
 diff --git a/crates/vector/src/along.rs b/crates/vector/src/along.rs
 new file mode 100644
 index 0000000..29ed83d
@@ -3481,10 +3336,10 @@ index e47c475..5794911 100644
          let all_closed = shape.path.subpaths.iter().all(|s| s.closed);
          let mut align = None;
 diff --git a/crates/vector/src/shapes.rs b/crates/vector/src/shapes.rs
-index c6660ec..a695421 100644
+index 607531d..74b8789 100644
 --- a/crates/vector/src/shapes.rs
 +++ b/crates/vector/src/shapes.rs
-@@ -323,6 +323,21 @@ pub fn live_path(s: &LiveShape) -> Path {
+@@ -304,6 +304,21 @@ pub fn live_path(s: &LiveShape) -> Path {
          LiveShape::ArrowLine { from, to, weight, start, end, width, length, concavity } => {
              arrow_line((from[0], from[1]), (to[0], to[1]), *weight, *start, *end, *width, *length, *concavity)
          }

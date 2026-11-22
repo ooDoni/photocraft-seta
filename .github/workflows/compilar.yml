@@ -15,10 +15,10 @@ concurrency:
   cancel-in-progress: true
 
 env:
-  # Versao do PhotoCraft em que a Seta e aplicada (o patch e feito para ela).
-  PHOTOCRAFT_COMMIT: 0e5254e77a5c5e35a575eec2e49e30426229e35d
-  I18N_COMMIT: e56d26244bbac099bfd42e23fb12f78a4be418a7
-  FONTS_COMMIT: cc9269cd8d8258785dac603fba3122e5d2556795
+  # Versao do PhotoCraft em que a Seta e aplicada: a release oficial v0.23.1 (o patch e feito para ela).
+  PHOTOCRAFT_COMMIT: 45066c48292e92229ada3459a83453439514c83d
+  I18N_COMMIT: 1a369093cdc8c8f5634b5a2fe09f8b83619b4838
+  FONTS_COMMIT: b076417b5880bd4154bd22f00695b1d28c6bea83
   TARGET: x86_64-pc-windows-msvc
 
 jobs:
@@ -60,7 +60,7 @@ jobs:
       - uses: Swatinem/rust-cache@v2
         with:
           workspaces: pc
-          key: seta-release
+          key: seta-v0231
 
       - name: Compilar
         shell: pwsh
