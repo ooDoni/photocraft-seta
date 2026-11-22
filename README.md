@@ -1,8 +1,9 @@
 # PhotoCraft (Seta)
 
 O [PhotoCraft](https://github.com/storytold/photocraft) com a ferramenta **Seta Curva**
-(setas curvas para thumbnails: pontos clicados na imagem, espessura por ponto, ponta e inicio
-ajustaveis, linha solida, tracejada ou pontilhada).
+(setas curvas para thumbnails: pontos clicados na imagem, alcas de curva no ponto selecionado,
+espessura por ponto, ponta e inicio ajustaveis, linha solida, tracejada ou pontilhada, opacidade
+em degrade do inicio a ponta).
 
 ## Instalar / atualizar no PC
 
